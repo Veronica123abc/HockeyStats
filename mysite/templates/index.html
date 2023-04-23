@@ -1,0 +1,98 @@
+<!doctype html>
+<html>
+  <head>
+    <title>Select Gamefile</title>
+  </head>
+  <style>
+    tb, th {writing-mode:vertical-rl; transform:rotate(180deg); }
+    th { background-color: lightblue; }
+    th {text-align: left}
+
+    p.one {
+      border-style: solid;
+      border-width: 5px 5px; /* 5px top and bottom, 20px on the sides */
+    }
+
+    p.two {
+      border-style: solid;
+      border-width: 20px 5px; /* 20px top and bottom, 5px on the sides */
+    }
+
+    p.three {
+      border-style: solid;
+      border-width: 25px 10px 4px 35px; /* 25px top, 10px right, 4px bottom and 35px left */
+    }
+
+
+    div {
+      height: 100px;
+      width: 800px;
+      background-color: powderblue; border-color: black; border-style: solid; border-width: 5px;
+    }
+
+    .float-container {
+        border: 3px solid #fff;
+        padding: 20px;
+    }
+
+    .float-child {
+        width: 50%;
+        float: left;
+        padding: 20px;
+        border: 2px solid red;
+    }
+    h1,h2 {
+      display:inline;
+      }
+  </style>
+
+
+    <body>
+    <h1>Swehockey - Unofficial and Eperimental Statistics </h1>
+
+      <div>
+        <h2>Upload a datasource</h2>
+          <br>
+          <form method="POST" action="/" enctype="multipart/form-data">
+            <label for="file">Select a gamefile to analyze: </label>
+            <input type="file"  id="inputfile" name="file"/>
+            <h1>&emsp; {{current_file}}</h1>
+            <br>
+            <!--<a href="javascript:document.getElementById('inputfile').click(); ">try this</a> -->
+            <input type="Submit"  name="process"/>
+          </form>
+      </div>
+
+      <br>
+      <br>
+      <div>
+        <h2>Available statistics</h2>
+        <br>
+        <br>
+        <form method="POST" action="/" enctype="multipart/form-data">
+          <input type="submit" value="Compute Entry Statistics" name="process"/>
+          <input type="submit" value="Compute Player Stats (Sean 2.0)" name="process"/>
+        </form>
+     </div>
+
+
+    {{t1|safe}}
+    {{t2|safe}}
+    <img src= "{{ team_1 }}" alt="User Image">
+    <img src= "{{ team_2 }}" alt="User Image">
+
+    <!--
+    GARBAGE
+    <br>
+
+    <img src= "{{entrystats_team_1}}" alt="User Image">
+    <img src= "{{entrystats_team_2}}" alt="User Image">
+    <img src= "{{url_for('static', filename = entrystats_team_1)}}" >
+    <img src= "{{url_for('static', filename = entrystats_team_2)}}" >
+    -->
+  </body>
+</html>
+
+<!--
+
+-->
