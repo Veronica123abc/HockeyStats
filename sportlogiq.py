@@ -77,8 +77,6 @@ def scrape():
     #db = driver.find_elements(By.XPATH, "//*[@id='main-content']/app-games/div/app-games-for-league/sl-game-report/div/div[1]/div[1]/div/button[1]")
     #print(len(driver.find_elements(By.XPATH, "//*[@id='main-content']/app-games/div/app-games-for-league/sl-game-report/div/div[1]/div[1]/div/button[1]")))
     click_chain.move_to_element(driver.find_element(By.XPATH, "//*[@id='main-content']/app-games/div/app-games-for-league/sl-game-report/div/div[1]/div[1]/div/button[1]")).click().perform()
-    print('apa')
-    print('apa2')
     time.sleep(10)
     #action_chain = ActionChains(driver)
     #download_button = driver.find_element(By.XPATH, "//*[@id='main-content']/app-games/div/app-games-for-league/sl-game-report/div/div[1]/div[1]/div/button[1]")
@@ -239,8 +237,8 @@ def extract_game_info_from_schedule_html(filename):
         crop = html[start:end]
         rows = crop.split('season-schedule-row')[1:]
         for row in rows:
-            home_team = row.split('matchup-content\">')[2].split('<')[0].replace(' ','')
-            away_team = row.split('matchup-content\">')[1].split('<')[0].replace(' ','')
+            home_team = row.split('matchup-content\">')[2].split('<')[0] #.replace(' ','')
+            away_team = row.split('matchup-content\">')[1].split('<')[0] #.replace(' ','')
             date = str(year + year_adds[month]) + str(month + 1).zfill(2)  +\
                    re.findall('\d+', row.split('date-container')[1])[0].zfill(2)
             sl_game_id = row.split('/games/league/')[1].split('/')[0]

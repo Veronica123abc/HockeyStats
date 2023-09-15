@@ -26,42 +26,33 @@ def longest_substring(s1, s2):
     match = SequenceMatcher(None, s1, s2)
     return match.find_longest_match(0, len(s1),0, len(s2)).size
 
-def find_unnamed_players(filename):
-    df = pd.read_csv(filename)
-    apoi = feature_engineering.all_players_in_game(df)
-    unnamed_players=[]
-    for player in apoi:
-        id=get_player_id(player)
-        if not id:
-            print(player, ' is not registered but appears in ', filename)
-            unnamed_players.append(player)
-    return unnamed_players
-
-
 
 def store_players(filename):
-    nan=np.nan
     stats_db = open_database()
+    nan = np.nan
+
     df = pd.read_csv(filename)
     skaters = df.query("playerReferenceId not in [@nan, 'None']").playerReferenceId.unique()
+    goalies = df.query("teamGoalieOnIceRef not in [@nan, 'None']").teamGoalieOnIceRef.unique()
+
     sl_game_id = int(os.path.basename(filename).split('_')[0])
+    affiliations=[]
     for skater in skaters:
         skater_data = df.query("playerReferenceId == @skater")
         team_name = skater_data.team.unique()[0]
-        team_id = get_team_id_from_substring(team_name)
         first_name = skater_data.playerFirstName.unique()[0]
         last_name = skater_data.playerLastName.unique()[0]
-        jersey_number = skater_data.playerJersey.unique()[0]
-        position = skater_data.playerPosition.unique()[0]
+        sl_id = int(skater_data.playerReferenceId.unique()[0])
+        team_id = get_team_id_from_substring(team_name)
+
         cursor = stats_db.cursor()
         sl_id=int(skater)
         cursor.execute("SELECT * FROM player WHERE sl_id = %s", (sl_id,))
         cursor.fetchall()
+        # print(cursor.rowcount)
         if cursor.rowcount < 1:
             print('Adding player: ', first_name, ' ', last_name, ' ', team_name, ' ', str(sl_game_id))
-            sql = f"INSERT INTO player (sl_id, firstName, lastName) VALUES ({int(sl_id)}, " \
-                  f"\'{str(first_name)}\', \'{str(last_name)}\');"
-            sql = "INSERT INTO player (sl_id, firstName, lastName) VALUES (%s,%s,%s)"
+            sql = "INSERT INTO player (sl_id, firstName, lastName ) VALUES (%s, %s, %s)"
             val = (int(sl_id), first_name, last_name)
             cursor.execute(sql, val)
             stats_db.commit()
@@ -69,15 +60,45 @@ def store_players(filename):
         player_id = cursor.fetchall()[0][0]
         cursor.execute(f'select id from game where sl_game_id = {sl_game_id}')
         game_id = cursor.fetchall()[0][0]
-
-        sql = f"INSERT INTO affiliation (player_id, game_id, team_id, jersey_number, position) " \
-              f"VALUES ({player_id}, {game_id}, {team_id}, {int(jersey_number)}, \'{position}\');"
-
+        affiliations.append({'game_id': game_id, 'player_id':player_id, 'team_id': team_id})
+    print('Adding affiliations: ', affiliations)
+    for affiliation in affiliations:
+        sql = f"INSERT INTO affiliation (player_id, game_id, team_id) VALUES ({affiliation['player_id']}, {affiliation['game_id']}, {affiliation['team_id']})"
         try:
             cursor.execute(sql)
             stats_db.commit()
         except:
             print('Could not add affiliation. Already stored ...?')
+
+
+
+
+        #cursor.execute("SELECT SL_key from player"):
+
+def add_jersey_number_to_affiliation(gamefile):
+    stats_db = open_database()
+    cursor = stats_db.cursor()
+    nan = np.nan
+    sl_game_id = int(os.path.basename(gamefile).split('_')[0])
+    game_id = get_game_id(sl_game_id=sl_game_id)
+    df = pd.read_csv(gamefile)
+    skaters = df.query("playerReferenceId not in [@nan, 'None']").playerReferenceId.unique()
+    goalies = df.query("teamGoalieOnIceRef not in [@nan, 'None']").teamGoalieOnIceRef.unique()
+    records=[]
+    for skater in skaters:
+        player_facts = df.loc[df['playerReferenceId'] == int(skater)].iloc[0][['playerJersey', 'playerPosition']]
+        records.append((get_player_id(int(skater)), game_id,
+                       int(player_facts['playerJersey']), player_facts['playerPosition']))
+
+    for record in records:
+        print(record)
+        sql=f"update affiliation set jersey_number = {record[2]}, position=\'{record[3]}\' " + \
+            f"where player_id={record[0]} and game_id={record[1]};"
+        try:
+            cursor.execute(sql)
+            stats_db.commit()
+        except:
+            print('Could not update record ', record)
 
 def store_teams(teams):
     stats_db = open_database()
@@ -87,6 +108,30 @@ def store_teams(teams):
         val = (team[0], team[1])
         cursor.execute(sql, val)
         stats_db.commit()
+
+def _assign_teams(team_ids, league_id, season):
+    if not isinstance(team_ids, list):
+        teams_ids = [team_ids]
+    stats_db = open_database()
+    cursor = stats_db.cursor()
+
+    for team in teams_ids:
+        sql = "INSERT INTO participation (league_id, team_id, season) values (%s, %s, %s)"
+        values = (league_id, team, season)
+        try:
+            cursor.execute(sql, values)
+            stats_db.commit()
+        except:
+            print("Assignment could not be added. Already stored?")
+
+
+def get_team_of_player(player_sl_id, first_name, last_name, game_file):
+    df = pd.read_csv(game_file)
+    p_o_i = feature_engineering.player_on_ice(df, str(player_sl_id))
+    p_o_i = df.query("")
+    df = df.query("player ")
+    skaters = df.query("playerReferenceId not in [@nan, 'None']").playerReferenceId.unique()
+    goalies = df.query("teamGoalieOnIceRef not in [@nan, 'None']").teamGoalieOnIceRef.unique()
 
 def get_team_id_from_substring(team_name):
     stats_db = open_database()
@@ -130,33 +175,19 @@ def get_team_id(team_name):
 def get_league_id(league_name):
     stats_db = open_database()
     cursor = stats_db.cursor()
-    sql = f"select id from league where name=\'{league_name}\';"
-    # values = (league_name)
-    cursor.execute(sql)
+    sql = "select id from league where name=%s"
+    values = (league_name,)
+    cursor.execute(sql, values)
     id = cursor.fetchall()
     if len(id) > 0:
         return id[0][0]
     else:
         return -1
 
-def assign_teams(teams, league, season):
-    stats_db = open_database()
-    cursor = stats_db.cursor()
-    if not isinstance(teams, list):
-        teams=[teams]
-    for team in teams:
-        if isinstance(team, str):
-            team = get_team_id(team)
-        if isinstance(league, str):
-            league = get_league_id(league)
-        sql = "INSERT INTO participation (league_id, team_id, season) values (%s, %s, %s)"
-        values = (league, team, season)
-        try:
-            cursor.execute(sql, values)
-            stats_db.commit()
-        except:
-            print("Assignment could not be added. Already stored?")
-
+def assign_team(team_name, league_name, season):
+    team_id = get_team_id(team_name)
+    league_id = get_league_id(league_name)
+    _assign_teams(team_id, league_id, season)
 
 def store_game(game, league_id):
     stats_db = open_database()
@@ -194,12 +225,16 @@ def extract_teams_from_league(filename):
         teams.append(tuple((team_id, team_name)))
     return teams
 
-def download_all_schedules(league_file, target_dir='./'):
-    teams = extract_teams_from_league(league_file)
+
+
+def download_all_schedules():
+    teams = extract_teams_from_league('/home/veronica/hockeystats/NHL/2022-23/Teams_NHL')
     for team in teams:
         team_id = team[0]
         url = f'https://hockey.sportlogiq.com/teams/{team_id}/schedule'
-        scraping.download_schedule(url, target_dir, regular_season=False)
+        scraping.download_schedule(url,
+                                      '/home/veronica/hockeystats/NHL/tmp',
+                                      regular_season=True)
 
 def get_player_id(sl_id):
     stats_db = open_database()
@@ -209,17 +244,19 @@ def get_player_id(sl_id):
     query = f"select id from player where sl_id = {sl_id};"
 
     cursor.execute(query)
-    id = cursor.fetchall()
-    if len(id) == 0:
-        return False
-    return id[0][0]
+    id = cursor.fetchall()[0][0]
+    return id
 
 def get_game_id(sl_game_id = None, sl_game_reference_id = None):
     stats_db = open_database()
     cursor = stats_db.cursor()
     if sl_game_id:
+        game_id_query = sl_game_id
+        q_column = 'sl_game_id'
         query = f"select id from game where sl_game_id = {sl_game_id};"
     elif sl_game_reference_id:
+        game_id_query = sl_game_reference_id
+        q_column = 'sl_game_reference_id'
         query = f"select id from game where sl_game_reference_id = {sl_game_reference_id};"
     else:
         return -1
@@ -246,20 +283,6 @@ def team_name_2_id(val, map):
     #    new_val = None
     return new_val
 
-def store_players_on_ice(event_id, players, cursor):
-    if not isinstance(players, list):
-        players=[players]
-    for player in players:
-        sql = "INSERT INTO player_on_ice (player_id, event_id) VALUES (%s, %s);"
-        val = (player, event_id)
-        print(sql)
-        try:
-            cursor.execute(sql, val)
-        except:
-            print("Could not add player with id " + str(player) + " to be on ice during event " + event_id)
-
-
-
 def player_slid_2_id(val, map):
     sl_ids = val.split(' ')
     new_item = []
@@ -275,6 +298,8 @@ def clean_dataframe(df):
     team_map={}
     for team in teams:
         team_map[team] = get_team_id_from_substring(team)
+    # team_map['None'] = 'None'
+    # team_map['none'] = 'none'
     team_in_possession = df.teamInPossession
     tip = team_in_possession.dropna().apply(lambda t: team_map.get(t))
     df['teamInPossession'] = tip
@@ -287,7 +312,7 @@ def clean_dataframe(df):
             player_id=cursor.fetchall()[0][0]
             player_map[player] = player_id
         except:
-            print(f'Player with sportlogic reference id {player} is not stored in the database')
+            print(f'Player with sportlogic reference id {player_id} is not stored in the database')
 
     apoi = feature_engineering.all_players_on_ice(df)
     apoi_int = feature_engineering.all_players_on_ice_as_int(apoi, player_map)
@@ -321,59 +346,78 @@ def store_events(gamefile):
      'score_differential': 'scoreDifferential', 'shorthand': 'shorthand',
      'team_in_possession': 'teamInPossession', 'team_skaters_on_ice': 'teamSkatersOnIce', 'timecode': 'timecode',
      'video_frame': 'frame', 'x_adjacent_coordinate': 'xAdjCoord', 'x_coordinate': 'xCoord',
-     'y_adjacent_coordinate': 'yAdjCoord', 'y_coordinate': 'yCoord', 'zone': 'zone', 'type': 'type', 'players_on_ice': 'apoi'}
+     'y_adjacent_coordinate': 'yAdjCoord', 'y_coordinate': 'yCoord', 'zone': 'zone', 'type': 'type'}
 
     inv_map = {map[k] : k for k in map.keys()}
+    value_names = []
     sl_game_id = int(os.path.basename(gamefile).split('_')[0])
     df = pd.read_csv(gamefile)
     game_id = get_game_id(sl_game_id=str(sl_game_id))
-    game_id_column = df.gameReferenceId.apply(lambda x: game_id)
-    df.gameReferenceId = game_id_column
+    game_id = df.gameReferenceId.apply(lambda x: game_id)
+    df.gameReferenceId = game_id
     df = clean_dataframe(df)
     df = df.rename(columns=inv_map)
     df = df[list(map.keys())]
-    players_on_ice = df[['sl_id', 'players_on_ice']]
-    df.drop('players_on_ice', inplace=True, axis=1)
     entries = df.to_dict(orient='records')
-
     for e in entries:
         new_record=[(k, e[k]) for k in e.keys() if pd.notna(e[k])]
+
+
+    # for i, row in df.iterrows():
+    #     new_record = [('game_id', game_id)]
+    #
+    #
+    #     for key in list(map.keys()):
+    #         if isinstance(row[map[key]], str) and not row[map[key]] in ['None', 'none']:
+    #             if key == 'team_in_possession':
+    #                 new_record.append((key, team_map[row[map[key]]]))
+    #             else:
+    #                 new_record.append((key, row[map[key]]))
+    #         elif isinstance(row[map[key]], str):
+    #             pass
+    #         elif not np.isnan(row[map[key]]):
+    #             new_record.append((key, row[map[key]]))
+    #
+    #     new_record.append(('player_on_ice', row['apoi']))
+    #     if isinstance(row['player'], str):
+    #         try:
+    #             new_record.append(('player_id', int(row['player'])))
+    #         except:
+    #             pass
+    #     if isinstance(row['team_goalie_on_ice'], str):
+    #         try:
+    #             new_record.append(('team_goalie_id', int(row['team_goalie_on_ice'])))
+    #         except:
+    #             pass
+    #     if isinstance(row['opposing_team_goalie_on_ice'], str):
+    #         try:
+    #             new_record.append(('opposing_team_goalie_id', int(row['opposing_team_goalie_on_ice'])))
+    #         except:
+    #             pass
+
         columns = ', '.join([c[0] for c in new_record])
         sql = "INSERT INTO event (" + columns + ") VALUES (" + ', '.join(len(new_record)*['%s']) + ');'
         val = tuple([c[1] for c in new_record])
-        event_id = e['sl_id']
+        # print(sql)
+        # print(val)
+        # try:
+        #     event_id = row['id']
+        # except:
+        #     pass
+        event_id=0
         logging.debug(f"======== Trying to register event {event_id} in game {game_id}========================\n")
+        #cursor.execute(sql, val)
         try:
+            # print(f"Trying to add event: game_id: {game_id} sl_game_id: {sl_game_id} sl_event_id: {event_id}")
             logging.debug(new_record)
             logging.debug('\n')
             cursor.execute(sql, val)
+            # print('Record added successfully')
             logging.debug('mysql registered event successfully \n')
         except:
             print(str(event_id), 'Could not register event. Already registered ...?')
             logging.debug('mysql failed to register event')
 
-    logging.debug('Trying to commit events to database')
-    try:
-        stats_db.commit()
-        logging.debug('mysql committed successfully')
-    except:
-        print('Could not commit')
-        logging.debug(f"mysql failed to commit changes for game {game_id}")
-
-    print("Storing players on ice for each event\n")
-    entries = players_on_ice.to_dict(orient='records')
-    for e in entries:
-        cursor.execute(f"SELECT id from event where sl_id={e['sl_id']} and game_id={game_id};")
-        event_id = cursor.fetchall()[0][0]
-        # store_players_on_ice(event_id, e['players_on_ice'], cursor)
-        players=e['players_on_ice']
-        for player in players:
-            sql = "INSERT INTO player_on_ice (player_id, event_id) VALUES (%s, %s);"
-            val = (player, event_id)
-            try:
-                cursor.execute(sql, val)
-            except:
-                print("Could not add player with id " + str(player) + " to be on ice during event " + str(event_id))
 
     logging.debug('Trying to commit to database')
     try:
@@ -383,39 +427,26 @@ def store_events(gamefile):
         print('Could not commit')
         logging.debug(f"mysql failed to commit changes for game {game_id}")
 
+    # for i, row in df.iterrows():
+    #     apoi = [int(s) for s in row.apoi.split() if s.isdigit()]
+    #     event_id
+    #     for i in apoi:
+    #         sql = f"insert into player_on_ice (event_id, player_id) values({event_id}, {get_player_id(i)});"
+    #         cursor.execute(sql)
+
+
+
+def store_players_on_ice(event_row):
+    all_players_on_ice = feature_engineering.player_on_ice(event_row)
+    print('apa')
+
+
 
 
 if __name__ == '__main__':
 
     import re
     import shutil
-
-    root_dir='/home/veronica/hockeystats/SHL/2022-23/gamefiles'
-    files = os.listdir(root_dir)
-    unnamed_players = []
-    for file in [os.path.join(root_dir,f) for f in files]:
-        print('Checking file ', file)
-        unnamed_players.append(find_unnamed_players(file))
-
-    # for i in unnamed_players:
-
-    # games = scraping.get_all_game_numbers('/home/veronica/hockeystats/SWE/tmp')
-    # games.sort()
-    # scraping.download_gamefile(games, src_dir = '/home/veronica/hockeystats/SWE/gamefiles')
-
-    # games = scraping.get_all_game_numbers('/home/veronica/hockeystats/SWE/tmp')
-    # store_games('/home/veronica/hockeystats/SWE/tmp', 3)
-    # file = '/home/veronica/hockeystats/NHL/2022-23/gamefiles/92424_playsequence-20230413-NHL-VGKvsSEA-20222023-21312.csv'
-
-
-
-    # download_all_schedules('/home/veronica/hockeystats/apa.html')
-    # teams = extract_teams_from_league('/home/veronica/hockeystats/apa.html')
-    #store_teams(teams)
-    # teams = [t[0] for t in teams]
-
-    # assign_teams(teams,'IIHF World Championship',"2023-24")
-    exit()
 
     log_root = '/home/veronica/hockeystats/logs'
     event_log = os.path.join(log_root, 'events')
@@ -427,14 +458,14 @@ if __name__ == '__main__':
     file = '/home/veronica/hockeystats/NHL/2022-23/gamefiles/92424_playsequence-20230413-NHL-VGKvsSEA-20222023-21312.csv'
     stat_db = open_database()
 
-
+    # add_jersey_number_to_affiliation(file)
     # store_events(file)
     # BOILERPLATE FOR STORING PLAYERS AND AFFILIATIONS FOR EACH GAMEFILE
     # sql='select sl_game_id from game join affiliation on game.id=affiliation.game_id group by sl_game_id order by sl_game_id;'
     # cursor = stat_db.cursor()
     # cursor.execute(sql)
     # games = cursor.fetchall()
-    root_dir = '/home/veronica/hockeystats/SWE/gamefiles'
+    root_dir = '/home/veronica/hockeystats/NHL/2022-23/gamefiles'
     files_in_dir = os.listdir(root_dir)
     files_in_dir = [file for file in files_in_dir if os.path.splitext(file)[-1] == '.csv']
     gamefiles = [os.path.join(root_dir, gf) for gf in files_in_dir]
@@ -445,11 +476,12 @@ if __name__ == '__main__':
 
         print(gamefile + f" [{ctr} of {len(gamefiles)}]")
         sl_game_id = int(os.path.basename(gamefile).split('_')[0])
-        #if sl_game_id==91432:
+        if sl_game_id==92157:
             #start=True
         #if start:
-        store_events(gamefile)
+            store_events(gamefile)
         # store_type(gamefile)
+        # add_jersey_number_to_affiliation(gamefile)
 
 
     #BOILERPLATE FOR FINDING ERRORS IN GAMEFILE-NAMES AND TO FIND MISSING GAMEFILES
@@ -461,11 +493,11 @@ if __name__ == '__main__':
 
 
     # BOILERPLATE FOR DOWNLOADING SCHEDULES
-    #scraping.download_schedule('https://hockey.sportlogiq.com/teams/21/schedule',
+    #scraping.download_schedule_v2('https://hockey.sportlogiq.com/teams/21/schedule',
     #                           '/home/veronica/hockeystats/NHL/tmp',
     #                           regular_season=True)
     #download_all_schedules()
-    #scraping.download_schedule('https://hockey.sportlogiq.com/teams/2/schedule',
+    #scraping.download_schedule_v2('https://hockey.sportlogiq.com/teams/2/schedule',
     #                              '/home/veronica/hockeystats/NHL/tmp',
     #                              regular_season=True)
 
@@ -474,7 +506,7 @@ if __name__ == '__main__':
 
 
     # BOILERPLATE FOR STORING ALL TEAMS FROM A TEXTFILE
-    # assign_teams('Calgary Flames','NHL', '2022-23')
+    # assign_team('Calgary Flames','NHL', '2022-23')
     #driver = scraping.download_gamefiles([103315, 103332,103331])
     # teams = extract_teams_from_league('/home/veronica/hockeystats/NHL/2022-23/Teams_NHL')
     # print(teams)
@@ -488,7 +520,7 @@ if __name__ == '__main__':
 
     # BOILERPLATE FOR ADDING A TEAM TO A LEAGUE
     # for team in team_names:
-    #     assign_teams(team, 'NHL', '2022-23')
+    #     assign_team(team, 'NHL', '2022-23')
 
 
     # BOILERPLATE FOR FETCHING ALL TEAMS FROM A LEAGUE
@@ -513,4 +545,4 @@ if __name__ == '__main__':
     # #feature_engineering.generate_summary(filename='playsequence.csv', team='Sweden Sweden')
     # #feature_engineering.generate_summary(filename='nhl.csv', team='Dallas Stars')
     # #feature_engineering.test(filename='playsequence.csv', team="Sweden Sweden")
-    # assign_teams()
+    # assign_team()

@@ -1,6 +1,7 @@
 import pandas as pd
 import re
 import numpy as np
+import math
 
 APOI = None
 
@@ -13,19 +14,102 @@ def shot_assist(df=None, filename=None, player_id=None):
     player_shot_assists = shot_assists[shot_assists['playerReferenceId'] == player_id]
     return player_shot_assists.shape[0]
 
+def convert_to_int(n):
+    n = convert_to_string(n)
+    if len(n) > 0:
+        return int(float(n))
+    else:
+        return None
+
+#    if isinstance(n, float):
+#        return n
+#    elif isinstance(n, int):
+#        return n
+#    elif isinstance(n, str):
+#        return int(re.sub("[^0-9]", " ", n))
+
+
+def convert_to_string(n):
+    if pd.isna(n):
+        return ''
+    elif isinstance(n, int):
+        return(str(n))
+    elif isinstance(n, float):
+        return(str(int(n)))
+    else:
+        numbers = re.findall('\d+', n)
+        res = ' '
+        for n in numbers:
+            res = res + ' ' + n + ' '
+        return res
+
+def get_player_id(player, map):
+    numbers = re.findall('\d+', player)
+    if len(numbers) > 0:
+    #if len(player) > 0:
+        return map.get(int(float(player)))
+    else:
+        return None
+def add_player_and_goalies(df, map):
+    player = df.playerReferenceId.apply(convert_to_string)
+    player = player.apply(get_player_id, map=map)
+    goalie = df.teamGoalieOnIceRef.apply(convert_to_string)
+    goalie = goalie.apply(get_player_id, map=map)
+    opposing_goalie = df.opposingTeamGoalieOnIceRef.apply(convert_to_string)
+    opposing_goalie = opposing_goalie.apply(get_player_id, map=map)
+    #goalie = df.teamGoalieOnIceRef.apply(convert_to_string)
+    #opposingGoalie = df.opposingTeamGoalieOnIceRef.apply(convert_to_string)
+    df['playerReferenceId'] = player
+    df['teamGoalieOnIceRef'] = goalie
+    df['opposingTeamGoalieOnIceRef'] = opposing_goalie
+    return df
+
+def all_players_in_game(df):
+    apoi = all_players_on_ice(df)
+    apig = list(set([int(float(s)) for s in ''.join(apoi).split(' ') if len(s) > 0]))
+
+    return apig
+
+def all_players_on_ice_as_int(apoi, map):
+    res=[]
+    for item in apoi:
+        ids = []
+        sl_ids = list(set([int(float(s)) for s in ''.join(item).split(' ') if len(s) > 0]))
+        for sl_id in sl_ids:
+            try:
+                ids.append(map[sl_id])
+            except:
+                print(f'Player with sl_id {sl_id} is not registered in the database')
+        res.append(ids)
+    return res
+def add_all_players_on_ice(df):
+    apoi = all_players_on_ice(df)
+    df['apoi'] = APOI  # all_players_on_ice
+    return df
+def all_players_on_ice(df):
+    all_players_on_ice = (df.teamForwardsOnIceRefs.apply(convert_to_string) + \
+                           df.teamDefencemenOnIceRefs.apply(convert_to_string) + \
+                           df.teamGoalieOnIceRef.apply(convert_to_string) + \
+                           df.opposingTeamForwardsOnIceRefs.apply(convert_to_string) + \
+                           df.opposingTeamDefencemenOnIceRefs.apply(convert_to_string) + \
+                           df.opposingTeamGoalieOnIceRef.apply(convert_to_string)).dropna()
+    apoi = [re.sub("[^0-9]", " ", s) for s in all_players_on_ice]
+    return apoi
+
 def player_on_ice(df, player_id):
     global APOI
-    all_players_on_ice = (df.teamForwardsOnIceRefs + \
-                           df.teamDefencemenOnIceRefs + \
-                           str(df.teamGoalieOnIceRef) + \
-                           df.opposingTeamForwardsOnIceRefs + \
-                           df.opposingTeamDefencemenOnIceRefs + \
-                           str(df.opposingTeamGoalieOnIceRef)).dropna()
+    all_players_on_ice = (df.teamForwardsOnIceRefs.apply(convert_to_string) + \
+                           df.teamDefencemenOnIceRefs.apply(convert_to_string) + \
+                           df.teamGoalieOnIceRef.apply(convert_to_string) + \
+                           df.opposingTeamForwardsOnIceRefs.apply(convert_to_string) + \
+                           df.opposingTeamDefencemenOnIceRefs.apply(convert_to_string) + \
+                           df.opposingTeamGoalieOnIceRef.apply(convert_to_string)).dropna()
 
     df = df.loc[all_players_on_ice.index]
     if APOI is None:
         APOI = [re.sub("[^0-9]", " ", s) for s in all_players_on_ice]
     return df[[player_id in on_ice for on_ice in APOI]]
+
 
 def get_player_ids(df=None, filename=None, team=None):
     players = list(df.query("team == @team").playerReferenceId.astype({'playerReferenceId': 'int'}).unique())

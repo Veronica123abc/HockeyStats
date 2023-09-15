@@ -4,6 +4,23 @@ import pandas as pd
 import numpy as  np
 import os
 from sportlogiq import extract_game_info_from_schedule_html
+
+map = {'id':'id','game_id': 'gameReferenceId', 'expected_goals_all_shots': 'expectedGoalsAllShots',
+       'expected_goals_on_net': 'expectedGoalsOnNet',
+       'flags': 'flags', 'game_time': 'gameTime', 'sl_id': 'id', 'is_defensive_event': 'isDefensiveEvent',
+       'is_last_play_of_possession': 'isLastPlayOfPossession', 'is_possession_breaking': 'isPossessionBreaking',
+       'is_possession_event': 'isPossessionEvent', 'manpower_situation': 'manpowerSituation', 'name': 'name',
+       'outcome': 'outcome', 'period': 'period', 'period_time': 'periodTime',
+       'play_in_possession': 'currentPlayInPossession',
+       'play_zone': 'playZone', 'possession_id': 'currentPossession', 'previous_name': 'previousName',
+       'previous_outcome': 'previousOutcome', 'previous_type': 'previousType', 'player_id': 'playerReferenceId',
+       'team_goalie_id': 'teamGoalieOnIceRef', 'opposing_team_goalie_id': 'opposingTeamGoalieOnIceRef',
+       'score_differential': 'scoreDifferential', 'shorthand': 'shorthand',
+       'team_in_possession': 'teamInPossession', 'team_skaters_on_ice': 'teamSkatersOnIce', 'timecode': 'timecode',
+       'video_frame': 'frame', 'x_adjacent_coordinate': 'xAdjCoord', 'x_coordinate': 'xCoord',
+       'y_adjacent_coordinate': 'yAdjCoord', 'y_coordinate': 'yCoord', 'zone': 'zone', 'type': 'type',
+       'players_on_ice': 'apoi', 'player_on_ice':'apoi'}
+
 def open_database():
     stats_db = mysql.connector.connect(
         host="localhost",
@@ -49,6 +66,15 @@ def store_team():
     cursor.execute(sql, val)
     stats_db.commit()
 
+def store_teams(teams):
+    stats_db = open_database()
+    cursor = stats_db.cursor()
+    for team in teams:
+        sql = "INSERT INTO team (sl_id, name) VALUES (%s, %s)"
+        val = (team[0], team[1])
+        cursor.execute(sql, val)
+        stats_db.commit()
+
 def assign_team():
     stats_db = open_database()
     cursor = stats_db.cursor()
@@ -88,6 +114,17 @@ def get_team_id(team_name):
     else:
         return -1
 
+def get_team_name(team_id):
+    stats_db = open_database()
+    cursor = stats_db.cursor()
+    sql = f"select name from team where id={team_id};"
+    cursor.execute(sql)
+    teams = cursor.fetchall()
+    if len(teams) == 1:
+        return teams[0][0]
+    else:
+        print("Team with id ", team_id, " is not stored in the database.")
+        return str(team_id)
 def store_game(game):
     stats_db = open_database()
     cursor = stats_db.cursor()
@@ -103,6 +140,51 @@ def store_game(game):
     stats_db.commit()
     print('apa')
 
+def find_missing_gamefiles(root_dir, league_id=1):
+    stat_db = open_database()
+    cursor = stat_db.cursor()
+    files = os.listdir(root_dir)
+    games_files = [int(f.split('_')[0]) for f in files]
+    games_files.sort()
+    cursor.execute(f'select sl_game_id from game where league_id={league_id} order by sl_game_id')
+    games_db = cursor.fetchall()
+    games_db = [g[0] for g in games_db]
+    missing_games = [g for g in games_db if g not in games_files]
+    return missing_games
+
+def extract_teams_from_gamefile(gamefile):
+    split_vs = gamefile.split('vs')
+    sl_game_id = gamefile.split('_')[0]
+    home_team = split_vs[0].split('-')[-1]
+    away_team = split_vs[1].split('-')[0]
+    return int(sl_game_id), home_team, away_team
+
+def verify_game_files(dir, league_id=1):
+    stat_db = open_database()
+    cursor = stat_db.cursor()
+    files = os.listdir(dir)
+    query = ("select game.sl_game_id, team.sl_code, team_2.sl_code, game.date "
+             "from game join team join team as team_2 "
+             "on game.home_team_id = team.id and game.away_team_id = team_2.id "
+             f"where league_id={league_id} order by game.sl_game_id;"
+             )
+    cursor.execute(query)
+    db_games = cursor.fetchall()
+    error_messages = []
+    error_game_ids = []
+    error_game_files = []
+    for file in [f for f in files if os.path.splitext(f)[1] == '.csv']:
+        sl_game_id, home_team, away_team = extract_teams_from_gamefile(file)
+        db_game_teams = [(game[1], game[2]) for game in db_games if game[0] == sl_game_id][0]
+        if db_game_teams[0] == away_team and db_game_teams[1] == home_team:
+            print('Correct: ', sl_game_id, ' was played by ', db_game_teams[0], ' and ', db_game_teams[1])
+        else:
+            error_messages.append('Error: ' + str(sl_game_id) + ' was played by ' + db_game_teams[0] + ' and ' + db_game_teams[1])
+            error_game_ids.append(sl_game_id)
+            error_game_files.append(os.path.join(dir, file))
+    return(error_messages, error_game_ids, error_game_files)
+
+'''
 if __name__ == '__main__':
     root_dir = '/home/veronica/hockeystats/SHL/2022-23/regular-season/schedules/'
     files = [os.path.join(root_dir, file) for file in os.listdir(root_dir)]
@@ -125,3 +207,91 @@ if __name__ == '__main__':
     for file in files:
         print(file)
         store_players(file)
+'''
+
+def goals_in_season(team_id, league, season, manpower_situation=None):
+    stat_db = open_database()
+    cursor = stat_db.cursor()
+    sql = f"select id from game where home_team_id={team_id} or away_team_id={team_id};"
+    cursor.execute(sql)
+    games = cursor.fetchall()
+    games = [g[0] for g in games]
+    res = None
+    for game in games:
+        goals = goals_in_game(game, manpower_situation=manpower_situation)
+        if not res:
+            res = goals[team_id]
+        else:
+            res['goals_ft'] += goals[team_id]['goals_ft']
+            res['goals_ot'] += goals[team_id]['goals_ot']
+            res['goals_shootout'] += goals[team_id]['goals_shootout']
+            res['total'] += goals[team_id]['total']
+    return res
+def goals_in_game(game_id, team_id=None, manpower_situation=None):
+    stat_db = open_database()
+    cursor = stat_db.cursor()
+    htgf = 0
+    atgf = 0
+    htgo = 0
+    atgo = 0
+    htgso = 0
+    atgso = 0
+    htshootout = 0
+    atshootout = 0
+
+    sql = f"select home_team_id, away_team_id from game where id={game_id};"
+    cursor.execute(sql)
+    teams = cursor.fetchall()
+    home_team_id = teams[0][0]
+    away_team_id = teams[0][1]
+
+    sql = f"select * from event where game_id={game_id};"
+    cursor.execute(sql)
+    events = cursor.fetchall()
+    cursor.execute("show columns from event;")
+    a=cursor.fetchall()
+    column_names = [map[c[0]] for c in a]
+    df = pd.DataFrame(events, columns=column_names)
+    home_team_goals = df.query(
+        "name == 'goal' and outcome in ['successful'] and teamInPossession == @home_team_id")
+    away_team_goals = df.query(
+        "name == 'goal' and outcome in ['successful'] and teamInPossession == @away_team_id")
+
+    if manpower_situation:
+        home_team_goals = home_team_goals.query("manpowerSituation == @manpower_situation")
+        away_team_goals = away_team_goals.query("manpowerSituation == @manpower_situation")
+
+
+    home_team_goals_ft = home_team_goals.query("gameTime < 3600")
+    away_team_goals_ft = away_team_goals.query("gameTime < 3600")
+    home_team_goals_ot = home_team_goals.query("gameTime > 3600 and gameTime < 3900")
+    away_team_goals_ot = home_team_goals.query("gameTime > 3600 and gameTime < 3900")
+    home_team_goals_shootout = df.query("name == 'sogoal' and gameTime == 3900 and teamInPossession == @home_team_id")
+    away_team_goals_shootout = df.query("name == 'sogoal' and gameTime == 3900 and teamInPossession == @away_team_id")
+
+    htgso = home_team_goals_shootout.shape[0]
+    atgso = away_team_goals_shootout.shape[0]
+    htshootout = 1 if htgso > atgso else 0
+    atshootout = 1 if atgso > htgso else 0
+
+    htgf = home_team_goals_ft.shape[0]
+    atgf = away_team_goals_ft.shape[0]
+    htgo = home_team_goals_ot.shape[0]
+    atgo = away_team_goals_ot.shape[0]
+    htgso = htgso
+    atgso = atgso
+    htshootout = htshootout
+    atshootout = atshootout
+
+
+    home_team = {'goals_ft': htgf,
+                 'goals_ot': htgo,
+                 'goals_shootout': htgso,
+                 'total': htgf+htgo+htshootout}
+    away_team = {'goals_ft': atgf,
+                 'goals_ot': atgo,
+                 'goals_shootout': atgso,
+                 'total': atgf+atgo+atshootout}
+    res = {home_team_id: home_team, away_team_id:away_team}
+    return res
+
