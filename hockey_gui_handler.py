@@ -246,7 +246,6 @@ class HockeyGuiHandler(object):
         self._update_image()
 
 
-
     def open_gamefile(self):
         save_to_folder = 'static/images'
         #options = QFileDialog.Options()
