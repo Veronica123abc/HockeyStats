@@ -17,59 +17,137 @@ def clean(df,col):
     clean = df[col].dropna()
     return df.iloc[clean.index]
 
-def time_entry_to_shot(df=None, team=None):
+def get_oz_rallies(df):
+    nan = np.nan
+    teams = df.query("team_in_possession not in [@nan, 'None']").team_in_possession.unique()
+    oz_rallies = {}
     pass_types = ['ozentry', 'ozentrystretch', 'ozentryoffboards']
     df = clean(df,'name')
-    team_possessions = df.query("teamInPossession == @team and manpowerSituation == 'evenStrength'")
-    dumpins = team_possessions.query("name == 'dumpin'")
-    controlled = team_possessions.query("name == 'carry' and zone == 'oz'")
-    passes = team_possessions.query("name == 'pass' and type in @pass_types")
-    all_entries = controlled+passes+dumpins
+    for team in teams:
+        team_possessions = df.query("team_in_possession == @team and manpower_situation == 'evenStrength'")
+        dumpins = team_possessions.query("name == 'dumpin'")
+        controlled = team_possessions.query("name == 'carry' and zone == 'oz'")
+        passes = team_possessions.query("name == 'pass' and type in @pass_types")
+        all_entries = controlled+passes+dumpins
 
-    ## Print out times for debugging
-    for e in (all_entries.index):
-        t = df.iloc[e]['gameTime']
-        m, s = divmod(round(t), 60)
-        print(str(m), ' ', str(round(s)))
-    oppossing_team_possessions = df.query("teamInPossession != @team")
-    outlet_passes = oppossing_team_possessions.query("name == 'pass' and type == 'outlet'")
-    dumpouts = oppossing_team_possessions.query("name == 'dumpout'")
-    controlled_exits = oppossing_team_possessions.query("name == 'carry' and zone == 'dz'")
-    all_exits = outlet_passes + dumpouts + controlled_exits
+        ## Print out times for debugging
+        # for e in (all_entries.index):
+        #     t = df.iloc[e]['gameTime']
+        #     m, s = divmod(round(t), 60)
+        #     print(str(m), ' ', str(round(s)))
+        oppossing_team_possessions = df.query("team_in_possession != @team")
+        outlet_passes = oppossing_team_possessions.query("name == 'pass' and type == 'outlet'")
+        dumpouts = oppossing_team_possessions.query("name == 'dumpout'")
+        controlled_exits = oppossing_team_possessions.query("name == 'carry' and zone == 'dz'")
+        all_exits = outlet_passes + dumpouts + controlled_exits
 
-    last_event = df.index[-1]
-    entry_index = list(all_entries.index)
-    exit_index = list(all_exits.index)
-    exit_index.append(last_event)  #Make sure the last entry has a matching exit if game ends in OZ
-    oz_rallies = []
-    oz_stats = []
-    for entry in entry_index:
-        exit = exit_index[[x for x,val in enumerate(exit_index) if val > entry][0]]
-        oz_rallies.append([entry, exit])
+        last_event = df.index[-1]
+        entry_index = list(all_entries.index)
+        exit_index = list(all_exits.index)
+        exit_index.append(last_event)  #Make sure the last entry has a matching exit if game ends in OZ
+        oz_rallies_entry_exit = []
+        for entry in entry_index:
+            exit = exit_index[[x for x,val in enumerate(exit_index) if val > entry][0]]
+            oz_rallies_entry_exit.append([entry, exit])
 
+        oz_rallies_team = []
+        for rally in oz_rallies_entry_exit:
+            records = df.iloc[rally[0]:rally[1]+1]
+            records_dict = records.to_dict(orient='records')
+            oz_rallies_team.append(records_dict)
+        oz_rallies[team] = oz_rallies_team
+    return oz_rallies
+
+def entry_positions(oz_rallies):
     for rally in oz_rallies:
-        records = df.iloc[rally[0]:rally[1]+1]
-        entry_type = records.iloc[0]['name']
+        entry_df = pd.DataFrame(rally)
+        position = entry_df.iloc[0]
+
+def time_entry_to_shots(entries):
+    entries_with_tts = []
+    for entry in entries:
+        entry_df = pd.DataFrame(entry)
+        entry_type = entry_df.iloc[0]['name']
         print(entry_type)
-        entry_time = records.iloc[0].gameTime
-        shots = records.query("name == 'shot'")
+        entry_time = entry_df.iloc[0].game_time
+        entry_x = entry_df.iloc[0]['x_coordinate']
+        entry_y = entry_df.iloc[0]['y_coordinate']
+        period = entry_df.iloc[0]['period']
+        shots = entry_df.query("name == 'shot'")
         number_shots = shots.shape[0]
         shot_list = []
         for shot in shots.index:
-            shot_list.append(shots.loc[shot].gameTime - entry_time)
+            shot_list.append(shots.loc[shot].game_time - entry_time)
 
         rally_stat = {}
         rally_stat['entry_type'] = entry_type
         rally_stat['entry_time'] = entry_time
         rally_stat['time_to_shots'] = shot_list
+        rally_stat['entry_x'] = entry_x
+        rally_stat['entry_y'] = entry_y
+        rally_stat['period'] = int(period)
         if len(shot_list) == 0:
             rally_stat['time_to_first_shot'] = None
         else:
             rally_stat['time_to_first_shot'] = shot_list[0]
 
+        entries_with_tts.append({'rally_stat':rally_stat, 'rally_events': entry})
+    return entries_with_tts
 
-        oz_stats.append(rally_stat)
-    return oz_stats
+
+# def time_entry_to_shot(df=None, team=None):
+#     pass_types = ['ozentry', 'ozentrystretch', 'ozentryoffboards']
+#     df = clean(df,'name')
+#     team_possessions = df.query("teamInPossession == @team and manpowerSituation == 'evenStrength'")
+#     dumpins = team_possessions.query("name == 'dumpin'")
+#     controlled = team_possessions.query("name == 'carry' and zone == 'oz'")
+#     passes = team_possessions.query("name == 'pass' and type in @pass_types")
+#     all_entries = controlled+passes+dumpins
+#
+#     ## Print out times for debugging
+#     for e in (all_entries.index):
+#         t = df.iloc[e]['gameTime']
+#         m, s = divmod(round(t), 60)
+#         print(str(m), ' ', str(round(s)))
+#     oppossing_team_possessions = df.query("teamInPossession != @team")
+#     outlet_passes = oppossing_team_possessions.query("name == 'pass' and type == 'outlet'")
+#     dumpouts = oppossing_team_possessions.query("name == 'dumpout'")
+#     controlled_exits = oppossing_team_possessions.query("name == 'carry' and zone == 'dz'")
+#     all_exits = outlet_passes + dumpouts + controlled_exits
+#
+#     last_event = df.index[-1]
+#     entry_index = list(all_entries.index)
+#     exit_index = list(all_exits.index)
+#     exit_index.append(last_event)  #Make sure the last entry has a matching exit if game ends in OZ
+#     oz_rallies = []
+#     oz_stats = []
+#     for entry in entry_index:
+#         exit = exit_index[[x for x,val in enumerate(exit_index) if val > entry][0]]
+#         oz_rallies.append([entry, exit])
+#
+#     for rally in oz_rallies:
+#         records = df.iloc[rally[0]:rally[1]+1]
+#         entry_type = records.iloc[0]['name']
+#         print(entry_type)
+#         entry_time = records.iloc[0].gameTime
+#         shots = records.query("name == 'shot'")
+#         number_shots = shots.shape[0]
+#         shot_list = []
+#         for shot in shots.index:
+#             shot_list.append(shots.loc[shot].gameTime - entry_time)
+#
+#         rally_stat = {}
+#         rally_stat['entry_type'] = entry_type
+#         rally_stat['entry_time'] = entry_time
+#         rally_stat['time_to_shots'] = shot_list
+#         if len(shot_list) == 0:
+#             rally_stat['time_to_first_shot'] = None
+#         else:
+#             rally_stat['time_to_first_shot'] = shot_list[0]
+#
+#
+#         oz_stats.append(rally_stat)
+#     return oz_stats
 
 def shot_assist(df=None, filename=None, player_id=None):
     passes_and_shots = df[(df['name'] == 'pass') + (df['name'] == 'shot')]
@@ -243,58 +321,58 @@ def oge_histogram(entries, ax=None, team=''):
     #plt.title(team)
     return ax
 
-def generate_entry_statistics(filename=None, df=None, team=None):
-
-    try:
-        entry_graphics = []
-        APOI = None
-        if df is None:
-            df = pd.read_csv(filename)
-        nan = np.nan
-        teams = df.query("teamInPossession not in [@nan, 'None']").teamInPossession.unique()
-        team_1 = time_entry_to_shot(df=df, team=teams[0])
-        team_2 = time_entry_to_shot(df=df, team=teams[1])
-        return (team_1, team_2), teams
-    except:
-        return None
-
-    #     fig = plt.figure(tight_layout=True)
-    #     gs = gridspec.GridSpec(2, 2)
-    #     ax0 = fig.add_subplot(gs[0,0])
-    #     ax1 = fig.add_subplot(gs[0,1])
-    #     ax2 = fig.add_subplot(gs[1, :])
-    #     fig.set_size_inches(10,10)
-    #     entry_histogram(team_1, ax=ax0, ax2=ax1)
-    #     oge_histogram(team_1, ax=ax2, team=teams[0])
-    #     fig.suptitle(teams[0], fontsize=20)
-    #     fig.tight_layout(pad=1.0)
-    #     fig.savefig('static/images/entrystats_team_1.png', dpi=100)
-    #     img = io.BytesIO()
-    #     fig.savefig(img, format='png')
-    #     entry_graphics.append(img)
-    #
-    #     fig = plt.figure(tight_layout=True)
-    #     gs = gridspec.GridSpec(2, 2)
-    #     ax0 = fig.add_subplot(gs[0,0])
-    #     ax1 = fig.add_subplot(gs[0,1])
-    #     ax2 = fig.add_subplot(gs[1, :])
-    #     fig.set_size_inches(10, 10)
-    #     entry_histogram(team_2, ax=ax0, ax2=ax1)
-    #     oge_histogram(team_2, ax=ax2, team=teams[1])
-    #     fig.suptitle(teams[1], fontsize=20)
-    #     fig.tight_layout(pad=1.0)
-    #     fig.savefig('static/images/entrystats_team_2.png', dpi=100)
-    #
-    #     img = io.BytesIO()
-    #     fig.savefig(img, format='png')
-    #     entry_graphics.append(img)
-    # except:
-    #     print("Could no compute entry statistics from the provided file")
-    #     teams = None
-    #     entry_graphics = None
-    #
-    #
-    # return teams, entry_graphics
+# def generate_entry_statistics(filename=None, df=None, team=None):
+#
+#     try:
+#         entry_graphics = []
+#         APOI = None
+#         if df is None:
+#             df = pd.read_csv(filename)
+#         nan = np.nan
+#         teams = df.query("teamInPossession not in [@nan, 'None']").teamInPossession.unique()
+#         team_1 = time_entry_to_shot(df=df, team=teams[0])
+#         team_2 = time_entry_to_shot(df=df, team=teams[1])
+#         return (team_1, team_2), teams
+#     except:
+#         return None
+#
+#     #     fig = plt.figure(tight_layout=True)
+#     #     gs = gridspec.GridSpec(2, 2)
+#     #     ax0 = fig.add_subplot(gs[0,0])
+#     #     ax1 = fig.add_subplot(gs[0,1])
+#     #     ax2 = fig.add_subplot(gs[1, :])
+#     #     fig.set_size_inches(10,10)
+#     #     entry_histogram(team_1, ax=ax0, ax2=ax1)
+#     #     oge_histogram(team_1, ax=ax2, team=teams[0])
+#     #     fig.suptitle(teams[0], fontsize=20)
+#     #     fig.tight_layout(pad=1.0)
+#     #     fig.savefig('static/images/entrystats_team_1.png', dpi=100)
+#     #     img = io.BytesIO()
+#     #     fig.savefig(img, format='png')
+#     #     entry_graphics.append(img)
+#     #
+#     #     fig = plt.figure(tight_layout=True)
+#     #     gs = gridspec.GridSpec(2, 2)
+#     #     ax0 = fig.add_subplot(gs[0,0])
+#     #     ax1 = fig.add_subplot(gs[0,1])
+#     #     ax2 = fig.add_subplot(gs[1, :])
+#     #     fig.set_size_inches(10, 10)
+#     #     entry_histogram(team_2, ax=ax0, ax2=ax1)
+#     #     oge_histogram(team_2, ax=ax2, team=teams[1])
+#     #     fig.suptitle(teams[1], fontsize=20)
+#     #     fig.tight_layout(pad=1.0)
+#     #     fig.savefig('static/images/entrystats_team_2.png', dpi=100)
+#     #
+#     #     img = io.BytesIO()
+#     #     fig.savefig(img, format='png')
+#     #     entry_graphics.append(img)
+#     # except:
+#     #     print("Could no compute entry statistics from the provided file")
+#     #     teams = None
+#     #     entry_graphics = None
+#     #
+#     #
+#     # return teams, entry_graphics
 
 def player_turnovers(df=None, player_id=None, failing_team=None):
     clean = df['isLastPlayOfPossession'].dropna()

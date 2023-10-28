@@ -79,6 +79,15 @@ def store_players(filename):
         except:
             print('Could not add affiliation. Already stored ...?')
 
+def update_teams(teams):
+    stats_db = open_database()
+    cursor = stats_db.cursor()
+    for team in teams:
+        sql = f"UPDATE team SET sl_name='{team[1]}' WHERE sl_id={team[0]};"
+        val = (team[0], team[1])
+        cursor.execute(sql)
+    stats_db.commit()
+
 def store_teams(teams):
     stats_db = open_database()
     cursor = stats_db.cursor()

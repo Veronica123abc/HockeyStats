@@ -228,7 +228,10 @@ def extract_game_info_from_schedule_html(filename):
 
 
     months_start_pos = sorted(months_start_pos, key=lambda x:(x[1]))
-    months_end_pos = months_start_pos[1:]+[tuple(np.array(months_start_pos[-1]) + ((0,len(html))))]
+    try:
+        months_end_pos = months_start_pos[1:]+[tuple(np.array(months_start_pos[-1]) + ((0,len(html))))]
+    except:
+        print('apa')
     parts = []
     for i in range(0, len(months_start_pos)):
         parts.append(months_start_pos[i] + (months_end_pos[i][1],))

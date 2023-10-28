@@ -22,7 +22,7 @@ import feature_engineering
 import shutil
 
 def get_driver():
-    DRIVER_PATH = '/home/veronica/Downloads/chromedriver_linux64_112/chromedriver'
+    DRIVER_PATH = '/home/veronica/Downloads/chromedriver_linux64_117/chromedriver'
     options = webdriver.ChromeOptions()
     options.add_argument('/home/veronica/.config/google-chrome/Default')
     options.add_argument("user-data-dir=/tmp/veronica")
@@ -136,7 +136,7 @@ def download_gamefiles(games):
     print('Done')
 
 def download_gamefile(game_ids, src_dir, tmp_dir = '/home/veronica/Downloads'):
-    tmp_dir = '/home/veronica/Downloads'
+    tmp_dir = '/home/veronica/hockeystats/Hockeyallsvenskan/2022-23/gamefiles/tmp'
     if not isinstance(game_ids, list):
         game_ids=[game_ids]
 
@@ -178,7 +178,7 @@ def download_gamefile(game_ids, src_dir, tmp_dir = '/home/veronica/Downloads'):
         #files=[]
         #while(len(files) == 0):
             time.sleep(1)
-            files = os.listdir('/home/veronica/Downloads')
+            files = os.listdir(tmp_dir)
             files = [f for f in files if re.match('playsequence', f)]
             files = [f for f in files if os.path.splitext(f)[1] == '.csv']
 
@@ -206,7 +206,7 @@ def login(driver):
 
 def get_web_driver():
 
-    DRIVER_PATH = '/home/veronica/Downloads/chromedriver_linux64_112/chromedriver'
+    DRIVER_PATH = '/home/veronica/Downloads/chromedriver_117_unzipped/chromedriver-linux64/chromedriver'
     options=webdriver.ChromeOptions()
     options.add_argument('/home/veronica/.config/google-chrome/Default')
     options.add_argument("user-data-dir=/tmp/veronica")
@@ -287,6 +287,23 @@ def select_team(driver, team_order, regular_season=True):
 #def create_team_list(league):
 #    "/html/body/div[3]/div[2]/div/mat-dialog-container/team-selector/div/mat-selection-list/mat-list-option[20]"
 
+def extract_teams_from_league(filename):
+    f = open(filename)
+    html = f.read()
+    team_segments = html.split('data-cy-teamid-value')
+    teams=[]
+    for team_segment in team_segments[1:]:
+        team_id = int(team_segment.split('\"')[1])
+        team_name =  team_segment.split('title=\"')[1].split('\"')[0]
+        teams.append({'sl_id': team_id, 'sl_name': team_name})
+    return teams
+def download_all_schedules(league_file, target_dir='./', regular_season=True):
+    teams = extract_teams_from_league(league_file)
+    for team in teams:
+        team_id = team['sl_id'] #team[0]
+        url = f'https://hockey.sportlogiq.com/teams/{team_id}/schedule'
+        download_schedule(url, target_dir, regular_season=regular_season)
+
 def download_schedule(url, path, regular_season=True):
     driver = get_web_driver()
 
@@ -296,13 +313,17 @@ def download_schedule(url, path, regular_season=True):
     # driver = select_category(driver, regular_season=regular_season)
     # Wait for "season reports" to load since that means all games are read into the page.
     combobox_xpath = "/html/body/app-root/div/ng-component/div/div[2]/div/main-navigator/div/button/span[1]/span/span[2]"
+    print(driver)
     driver = wait_for_element(driver, combobox_xpath)
+    print(driver)
     combobox_element = driver.find_element(By.XPATH, combobox_xpath)
+    print(combobox_element.text)
     is_regular_season = combobox_element.text[0:3] == 'REG'
     if (is_regular_season ^ regular_season):
         driver = select_category(driver, regular_season=regular_season)
-
+    print(driver)
     if driver:
+
         el = "//*[@id='mat-tab-link-18']"
         WebDriverWait(driver, 50).until(EC.presence_of_element_located(
             (By.XPATH, el)))
@@ -320,6 +341,7 @@ def download_schedule(url, path, regular_season=True):
         else:
             filename = team_name + '_playoffs.txt'
 
+        print('apa', inner_html)
         string_to_file(inner_html, path, filename)
 
 

@@ -278,11 +278,11 @@ def noges_for_types(entries):
     for col in range(3):
         plt.bar(col, data[col], color='red')
         #cell_text.append(['%d' % x for x in data[col]])
-def oge_time_to_shot(entries, ax=None, max_time=30, interval=3):
+def oge_time_to_shot(entries, fig=None, ax=None, max_time=30, interval=3):
     # demo()
     # noges_for_types(entries)
-
-    fig = plt.figure(figsize=(40,25))
+    if fig is None:
+        fig = plt.figure(figsize=(40,25))
 
     ax = fig.add_gridspec(4, 4)
     ax1 = fig.add_subplot(ax[0:2, 3:])
