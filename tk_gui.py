@@ -91,7 +91,7 @@ class HockeyGui(hockey_gui_handler.HockeyGuiHandler):
         self.scale_delta = 0.1 # Dynamically changed to make downscaling slower as the image becomes very small
         self.SCALE_DELTA_MAX = 0.1 # The highest allowed change in scale
         self.SCALING_FACTOR = 0.9
-        self.default_clean_file = "/home/veronica/repos/HockeyStats/static/images/rink.jpg"
+        self.default_clean_file = "/home/veronica/repos/HockeyStats/rink.jpg"
         self.clean_image_changed = False
         self.filename = 'regions.json'
         self.left_down = False

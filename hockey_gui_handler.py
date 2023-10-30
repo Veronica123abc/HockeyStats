@@ -1,34 +1,35 @@
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
-import numpy as np
-import time
-import cv2
-import pandas as pd
-import mysql.connector
-import mysql
-import pandas as pd
-import numpy as  np
-import os
-from difflib import SequenceMatcher
-import db_tools
+# from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+# from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolbar
+# import numpy as np
+# import time
+# import cv2
+# import pandas as pd
+# import mysql.connector
+# import mysql
+# import pandas as pd
+# import numpy as  np
+# import os
+# from difflib import SequenceMatcher
+# import db_tools
 import entries
-import entries_from_db
-import store_players
-from sportlogiq import extract_game_info_from_schedule_html
-import sportlogiq
-import scraping
-import feature_engineering
-import db_tools
+# import entries_from_db
+# import store_players
+# from sportlogiq import extract_game_info_from_schedule_html
+# import sportlogiq
+# import scraping
+# import feature_engineering
+# import db_tools
+import cv2
 import uuid
-import logging
-import matplotlib.pyplot as plt
-from matplotlib.figure import  Figure
-from utils.graphics import oge_time_to_shot
+# import logging
+# import matplotlib.pyplot as plt
+# from matplotlib.figure import  Figure
+# from utils.graphics import oge_time_to_shot
 from utils.tools import *
 from utils import read_write, graphics
-from shapely.geometry import Polygon, Point
+# from shapely.geometry import Polygon, Point
 import geometry
-import tkinter as tk
+# import tkinter as tk
 from tkinter import *
 import tkinter
 import copy

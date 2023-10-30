@@ -13,10 +13,10 @@ import base64
 from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 from matplotlib.figure import Figure
 APOI = None
-from scipy.ndimage import interpolation
-import math
-import db_tools
-import entries
+# from scipy.ndimage import interpolation
+# import math
+# import db_tools
+# import entries
 import cv2
 import copy
 
