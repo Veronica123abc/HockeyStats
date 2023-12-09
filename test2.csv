@@ -1,0 +1,185 @@
+<!DOCTYPE html><html style="font-size: 62.5%" lang="en"><head>
+	<meta charset="utf-8">
+	<title>SPORTLOGiQ</title>
+	<base href="/">
+	<script>
+		// In case cloudfront redirect to an "error pages", it doesn't do the redirection to HTTPS itself, so we have to force it here
+		if (location.protocol != 'https:') {
+			location.href = 'https:' + window.location.href.substring(window.location.protocol.length);
+		}
+	</script>
+	<link href="/assets/rubik/rubik.css" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="/assets/rubik/rubik.css"></noscript>
+	<link href="/assets/robotomono/roboto-mono.css" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="/assets/robotomono/roboto-mono.css"></noscript>
+	<style>@-webkit-keyframes fa-spin{0%{-webkit-transform:rotate(0deg);transform:rotate(0deg)}100%{-webkit-transform:rotate(359deg);transform:rotate(359deg)}}</style><link href="/assets/font-awesome-4.7.0/css/font-awesome.min.css" rel="stylesheet" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="/assets/font-awesome-4.7.0/css/font-awesome.min.css"></noscript>
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="icon" type="image/png" href="/assets/favicon16x16.png" size="16x16">
+	<link rel="icon" type="image/png" href="/assets/favicon32x32.png" size="32x32">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+	<style type="text/css">@font-face{font-family:'Material Icons';font-style:normal;font-weight:400;src:url(https://fonts.gstatic.com/s/materialicons/v140/flUhRq6tzZclQEJ-Vdg-IuiaDsNcIhQ8tQ.woff2) format('woff2');}.material-icons{font-family:'Material Icons';font-weight:normal;font-style:normal;font-size:24px;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;word-wrap:normal;direction:ltr;-webkit-font-feature-settings:'liga';-webkit-font-smoothing:antialiased;}</style>
+
+    <style type="text/css">@font-face{font-family:'Material Symbols Sharp';font-style:normal;font-weight:100 700;src:url(https://fonts.gstatic.com/s/materialsymbolssharp/v100/gNMVW2J8Roq16WD5tFNRaeLQk6-SHQ_R00k4aWHSSmlN.woff2) format('woff2');}.material-symbols-sharp{font-family:'Material Symbols Sharp';font-weight:normal;font-style:normal;font-size:24px;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;word-wrap:normal;direction:ltr;-webkit-font-feature-settings:'liga';-webkit-font-smoothing:antialiased;}</style>
+
+	<style type="text/css">
+		.app-loader {
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background: white;
+			transition: opacity .3s ease-in-out;
+		}
+
+		.app-loader.fade {
+			opacity: 0;
+		}
+
+		.loader {
+			box-sizing: content-box;
+			height: 10rem;
+			width: 10rem;
+			margin: -5rem -5rem;
+			position: fixed;
+			top: 50%;
+			left: 50%;
+			animation: rotate 1s infinite linear;
+			border: 6px solid #0A2259;
+			border-right-color: transparent;
+			border-radius: 50%;
+		}
+
+		@keyframes rotate {
+			0% {
+				transform: rotate(0deg);
+			}
+
+			100% {
+				transform: rotate(360deg);
+			}
+		}
+	</style>
+
+	<!-- Start of sportlogiqhelp Zendesk Widget script -->
+	<script type="text/javascript">
+		window.zESettings = {
+			webWidget: {
+				chat: {
+					suppress: true,
+					connectOnPageLoad: false
+				},
+				contactForm: {
+					suppress: true
+				},
+				helpCenter: {
+					suppress: true
+				},
+				talk: {
+					suppress: true
+				},
+				answerBot: {
+					suppress: true
+				}
+			}
+		};
+	</script>
+	<!-- Start of sportlogiqhelp Zendesk Widget script -->
+	<script id="ze-snippet" src="https://static.zdassets.com/ekr/snippet.js?key=94dc7c28-6cfe-46b6-ad41-430136e60d77"> </script>
+	<!-- End of sportlogiqhelp Zendesk Widget script -->
+	<script type="text/javascript">
+		if (typeof zE !== "undefined") {
+			zE('webWidget', 'updateSettings', {
+				wwebWidget: {
+					chat: {
+						suppress: true
+					},
+					contactForm: {
+						suppress: true
+					},
+					helpCenter: {
+						suppress: true
+					},
+					talk: {
+						suppress: true
+					},
+					answerBot: {
+						suppress: true
+					}
+				}
+			});
+		}
+	</script>
+	<script type="module">
+		import { TableauViz } from "https://public.tableau.com/javascripts/api/tableau.embedding.3.latest.min.js";
+		window.TableauViz = TableauViz;
+	</script>
+<style>html{font-family:sans-serif;-ms-text-size-adjust:100%;-webkit-text-size-adjust:100%;box-sizing:border-box}html *,html *:before,html:after{box-sizing:inherit}body{margin:0}html{font-size:62.5%!important;font-family:Rubik,sans-serif;color:#0a2259}body{font-size:1.4rem!important}body,html{-webkit-font-smoothing:antialiased;padding:0;margin:0;height:100%;-webkit-print-color-adjust:exact}app-root{display:block;height:100%}@media only print{@page{margin:1cm;orphans:10;widows:10}}</style><link rel="stylesheet" href="styles.cdb25d4c2f93908f.css" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="styles.cdb25d4c2f93908f.css"></noscript></head>
+
+<body style="font-size: 1.4rem">
+	<script>console.time("loadTime")</script>
+
+	<div class="app-loader">
+		<div class="loader">
+			<div></div>
+			<div></div>
+			<div></div>
+			<div></div>
+		</div>
+	</div>
+	<app-root animonchange="">
+		<!-- Add loader of some kind -->
+	</app-root>
+
+	<!-- Start FullStory -->
+	<script>
+		window['_fs_debug'] = false;
+		window['_fs_host'] = 'fullstory.com';
+		window['_fs_script'] = 'edge.fullstory.com/s/fs.js';
+		window['_fs_org'] = '9B1A7';
+		window['_fs_namespace'] = 'FS';
+		(function (m, n, e, t, l, o, g, y) {
+			if (e in m) { if (m.console && m.console.log) { m.console.log('FullStory namespace conflict. Please set window["_fs_namespace"].'); } return; }
+			g = m[e] = function (a, b, s) { g.q ? g.q.push([a, b, s]) : g._api(a, b, s); }; g.q = [];
+			o = n.createElement(t); o.async = 1; o.crossOrigin = 'anonymous'; o.src = 'https://' + _fs_script;
+			y = n.getElementsByTagName(t)[0]; y.parentNode.insertBefore(o, y);
+			g.identify = function (i, v, s) { g(l, { uid: i }, s); if (v) g(l, v, s) }; g.setUserVars = function (v, s) { g(l, v, s) }; g.event = function (i, v, s) { g('event', { n: i, p: v }, s) };
+			g.anonymize = function () { g.identify(!!0) };
+			g.shutdown = function () { g("rec", !1) }; g.restart = function () { g("rec", !0) };
+			g.log = function (a, b) { g("log", [a, b]) };
+			g.consent = function (a) { g("consent", !arguments.length || a) };
+			g.identifyAccount = function (i, v) { o = 'account'; v = v || {}; v.acctId = i; g(o, v) };
+			g.clearUserCookie = function () { };
+			g.setVars = function (n, p) { g('setVars', [n, p]); };
+			g._w = {}; y = 'XMLHttpRequest'; g._w[y] = m[y]; y = 'fetch'; g._w[y] = m[y];
+			if (m[y]) m[y] = function () { return g._w[y].apply(this, arguments) };
+			g._v = "1.3.0";
+		})(window, document, window['_fs_namespace'], 'script', 'user');
+		window['FS'] && window['FS'].shutdown();
+	</script>
+	<!-- End FullStory -->
+
+
+	<!-- start Mixpanel -->
+	<script type="text/javascript">(function (e, a) {
+			if (!a.__SV) {
+				var b = window; try { var c, l, i, j = b.location, g = j.hash; c = function (a, b) { return (l = a.match(RegExp(b + "=([^&]*)"))) ? l[1] : null }; g && c(g, "state") && (i = JSON.parse(decodeURIComponent(c(g, "state"))), "mpeditor" === i.action && (b.sessionStorage.setItem("_mpcehash", g), history.replaceState(i.desiredHash || "", e.title, j.pathname + j.search))) } catch (m) { } var k, h; window.mixpanel = a; a._i = []; a.init = function (b, c, f) {
+					function e(b, a) {
+						var c = a.split("."); 2 == c.length && (b = b[c[0]], a = c[1]); b[a] = function () {
+							b.push([a].concat(Array.prototype.slice.call(arguments,
+								0)))
+						}
+					} var d = a; "undefined" !== typeof f ? d = a[f] = [] : f = "mixpanel"; d.people = d.people || []; d.toString = function (b) { var a = "mixpanel"; "mixpanel" !== f && (a += "." + f); b || (a += " (stub)"); return a }; d.people.toString = function () { return d.toString(1) + ".people (stub)" }; k = "disable time_event track track_pageview track_links track_forms register register_once alias unregister identify name_tag set_config reset people.set people.set_once people.increment people.append people.union people.track_charge people.clear_charges people.delete_user".split(" ");
+					for (h = 0; h < k.length; h++)e(d, k[h]); a._i.push([b, c, f])
+				}; a.__SV = 1.2; b = e.createElement("script"); b.type = "text/javascript"; b.async = !0; b.src = "undefined" !== typeof MIXPANEL_CUSTOM_LIB_URL ? MIXPANEL_CUSTOM_LIB_URL : "file:" === e.location.protocol && "//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js".match(/^\/\//) ? "https://cdn.mxpnl.com/libs/mixpanel-2-latest.min.js" : "//cdn.mxpnl.com/libs/mixpanel-2-latest.min.js"; c = e.getElementsByTagName("script")[0]; c.parentNode.insertBefore(b, c)
+			}
+		})(document, window.mixpanel || []);
+		mixpanel.init("e87163e52514a7a88584ea9292effde1");</script>
+	<!-- end Mixpanel -->
+
+<script src="runtime.afd33eff2f6bb3ea.js" type="module"></script><script src="polyfills.15399516ae6f0703.js" type="module"></script><script src="scripts.e5b116f7fa5784c7.js" defer></script><script src="vendor.e204f6b087af76c9.js" type="module"></script><script src="main.4f91d9980c1c0c04.js" type="module"></script>
+
+
+
+</body></html>
